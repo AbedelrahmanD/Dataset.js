@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        body {
+            font-family: sans-serif;
+
+        }
+
+        .group {
+            display: flex;
+        }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdownTitle {
+            font-weight: bold;
+        }
+
+        .dropdownOptions {
+            background-color: white;
+            box-shadow: 1px 1px 5px grey;
+            border-radius: 5px;
+            padding: 5px;
+            width: 100px;
+            animation: 0.3s slideUp forwards;
+            position: absolute;
+            top: 100%;
+            z-index: 5;
+
+        }
+
+        @keyframes slideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0px);
+            }
+
+        }
+    </style>
+
+</head>
+
+<body>
+    <h1>
+        Group1
+    </h1>
+    <div class="group">
+
+
+        <div class="dropdown">
+            <div class="dropdownTitle" data-toggle="optionsg1" data-toggle-show data-toggle-group="1">Show</div>
+            <div class="dropdownOptions" data-toggle-content="optionsg1" data-toggle-group="1">
+                <ul>
+                    <li>one</li>
+                    <li>two</li>
+                    <li>three</li>
+                </ul>
+            </div>
+        </div>
+        |
+        <div class="dropdown">
+            <div class="dropdownTitle" data-toggle="options2g1" data-toggle-group="1">Toggle</div>
+            <div class="dropdownOptions" data-toggle-content="options2g1" data-toggle-group="1">
+                <ul>
+                    <li>one</li>
+                    <li>two</li>
+                    <li>three</li>
+                </ul>
+            </div>
+        </div>
+        |
+        <div class="dropdown">
+            <div class="dropdownTitle" data-toggle="options3g1" data-toggle-active data-toggle-group="1">Active By
+                Default</div>
+            <div class="dropdownOptions" data-toggle-content="options3g1" data-toggle-group="1">
+                <ul>
+                    <li>one</li>
+                    <li>two</li>
+                    <li>three</li>
+                </ul>
+            </div>
+        </div>
+        |
+        <div class="dropdownTitle" data-toggle="all" data-toggle-group="1">
+            Show All
+        </div>
+    </div>
+
+    <br>
+    <hr>
+    <br>
+    <h1>
+        Group2
+    </h1>
+    <div class="group">
+
+
+        <div class="dropdown">
+            <div class="dropdownTitle" data-toggle="optionsg2" data-toggle-show data-toggle-group="2">Show</div>
+            <div class="dropdownOptions" data-toggle-content="optionsg2" data-toggle-group="2">
+                <ul>
+                    <li>one</li>
+                    <li>two</li>
+                    <li>three</li>
+                </ul>
+            </div>
+        </div>
+        |
+        <div class="dropdown">
+            <div class="dropdownTitle" data-toggle="options2g2" data-toggle-group="2">Toggle</div>
+            <div class="dropdownOptions" data-toggle-content="options2g2" data-toggle-group="2">
+                <ul>
+                    <li>one</li>
+                    <li>two</li>
+                    <li>three</li>
+                </ul>
+            </div>
+        </div>
+        |
+        <div class="dropdown">
+            <div class="dropdownTitle" data-toggle="options3g2" data-toggle-active data-toggle-group="2">Active By
+                Default</div>
+            <div class="dropdownOptions" data-toggle-content="options3g2" data-toggle-group="2">
+                <ul>
+                    <li>one</li>
+                    <li>two</li>
+                    <li>three</li>
+                </ul>
+            </div>
+        </div>
+        |
+        <div class="dropdownTitle" data-toggle="all" data-toggle-group="2">
+            Show All
+        </div>
+    </div>
+
+    <script src="data_toggle.js"></script>
+</body>
+
+</html>
