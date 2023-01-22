@@ -91,5 +91,24 @@ echo json_encode($response);
  </form>
 ```
 
+<h1>Validate Form In JS</h1>
+<p>To validate form in js manually you can use  <code>isValidForm("id")</code> function</p>
+
+
+```
+ <script>
+ isValid("loginForm");
+ </script>
+```
+
+<h1>Validate Single Input In JS</h1>
+<p>To validate single input in js manually you can use  <code>isValidInput("id")</code> function</p>
+
+
+```
+ <script>
+ isValid("email");
+ </script>
+```
 
 
