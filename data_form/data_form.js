@@ -12,17 +12,17 @@ var statusCodesMessages = {
 };
 
 
-function changeCheckboxValue(formId) {
-    document.querySelectorAll(`${formId} [type=checkbox]`).forEach(checkbox => {
+function changeCheckboxValue(formSelector) {
+    document.querySelectorAll(`${formSelector} [type=checkbox]`).forEach(checkbox => {
         checkbox.value = checkbox.checked ? 1 : 0;
     })
 }
 
 
 
-function runIsValidFormOnChange(formId) {
-    document.querySelectorAll(`${formId} [data-type]`).forEach(input => {
-        input.oninput = () => isValidForm(formId)
+function runIsValidFormOnChange(formSelector) {
+    document.querySelectorAll(`${formSelector} [data-type][name]:not([data-type-ignore])`).forEach(input => {
+        input.oninput = () => isValidForm(formSelector, false);
     })
 }
 
@@ -90,28 +90,24 @@ function isValidInput(input) {
     input.removeAttribute("data-form-current-input");
     return isValid;
 }
-function isValidForm(formId) {
-    changeCheckboxValue(formId);
-    runIsValidFormOnChange(formId);
+function isValidForm(formSelector, isSubmitted = true) {
+    changeCheckboxValue(formSelector);
+    runIsValidFormOnChange(formSelector);
     var isValid = true;
-    var firstInvalidInput = null;
-    document.querySelectorAll(`${formId} [data-type]`).forEach(input => {
+    document.querySelectorAll(`${formSelector} [data-type][name]:not([data-type-ignore])`).forEach(input => {
         if (!isValidInput(input)) {
             isValid = false;
-            if (firstInvalidInput == null) {
-                firstInvalidInput = input;
-            }
         }
 
     });
-    if (firstInvalidInput != null) {
-        window.scroll({
-            top: firstInvalidInput.getBoundingClientRect().top + window.scrollY-200,
-            behavior: 'smooth'
-        });
+
+
+    if (!isValid && isSubmitted) {
+        var invalidInput = document.querySelector("[data-invalid-input]");
+        var position = invalidInput.getBoundingClientRect();
+        window.scrollTo(position.left, position.top + window.scrollY - 30);
     }
-  
- 
+
 
     return isValid;
 
@@ -123,10 +119,10 @@ function isValidForm(formId) {
 function onTypeEvntbinding() {
 
     document.querySelectorAll("[data-form-auto]").forEach(form => {
-        document.querySelectorAll(`#${form.id} [data-type]`).forEach(input => {
+        document.querySelectorAll(`#${form.id} [data-type][name]:not([data-type-ignore])`).forEach(input => {
             input.oninput = () => isValidInput(input);
 
-        })
+        });
 
     });
 
@@ -135,111 +131,192 @@ function onTypeEvntbinding() {
 
 function ajaxFormSubmitEventBinding() {
     document.querySelectorAll("[data-form]").forEach(form => {
-        form.onsubmit = async (e) => {
+        form.onsubmit = async function (e) {
             e.preventDefault();
             var formId = form.id;
-            if (!isValidForm(`#${formId}`)) {
+            if (!isValidForm(`#${formId}`, true)) {
                 return;
             }
 
-            var action = form.getAttribute("action");
-            var method = form.getAttribute("method");
-            var formData = new FormData(form);
-            var fetchOptions = {
-                method: method
-            }
-
-            if (method.trim().toLowerCase() == "post") {
-                fetchOptions.body = formData;
-            } else {
-                var queryString = new URLSearchParams(formData).toString()
-                action += action.includes("?") ? `&${queryString}` : `?${queryString}`
-            }
-
-            var loaders = document.querySelectorAll(`#${formId} [data-form-loader]`);
-            var messages = document.querySelectorAll(`#${formId} [data-form-message]`);
-            var buttons = document.querySelectorAll(`#${formId} button`);
-            var errors = document.querySelectorAll(`[data-error]`);
-
-            loaders.forEach(loader => {
-                loader.style.display = "flex";
-            });
-
-            buttons.forEach(input => {
-                input.setAttribute("disabled", true);
-            });
-
-            messages.forEach(message => {
-                message.style.display = "none";
-            });
-
-            errors.forEach(error => {
-                error.textContent = "";
-            });
+            submitAjaxForm(`#${formId}`);
 
 
-            var response = await fetch(action, fetchOptions);
-
-            loaders.forEach(loader => {
-                loader.style.display = "none";
-            });
-
-            buttons.forEach(input => {
-                input.removeAttribute("disabled");
-            });
-
-
-
-
-            if (!successStatusCodes.includes(response.status)) {
-                alert(`${action} ${statusCodesMessages[response.status]}`);
-                return;
-            }
-
-            response = await response.json();
-
-            if (response.message) {
-
-                messages.forEach(message => {
-
-                    message.classList.remove("error");
-                    message.classList.remove("success");
-                    message.classList.remove("alert-success");
-                    message.classList.remove("alert-danger");
-                    message.classList.remove("alert-warning");
-                    message.classList.remove("alert-info");
-
-                    message.innerHTML = response.message;
-                    message.style.display = "flex";
-                    message.classList.add(response.status);
-                    message.classList.add(`${response.status == 'success' ? 'alert-success' : 'alert-danger'}`)
-                });
-
-            }
-            if (response.redirect) {
-                window.location.href = response.redirect;
-            }
-            if (response.reset) {
-                document.querySelector(`#${formId}`).reset();
-            }
-
-            if (response.errors) {
-                var errorKeys = Object.keys(response.errors);
-                errorKeys.forEach((field) => {
-                    document.querySelector(`[data-error=${field}]`).textContent = response.errors[field];
-                });
-
-
-            }
-
-            if (form.dataset.form) {
-                eval(window[form.dataset.form](response));
-            }
 
 
 
         }
     });
+
+}
+
+async function submitAjaxForm(formSelector) {
+    var form = document.querySelector(formSelector);
+
+    var formData = new FormData(form);
+
+    var inputFiles = form.querySelectorAll("[type=file]:not([data-type-ignore])");
+    var inputFilesNb = inputFiles.length;
+
+    if (inputFilesNb) {
+        var loaders = document.querySelectorAll(`${formSelector} [data-form-loader]`);
+        loaders.forEach(loader => {
+            loader.style.display = "flex";
+        });
+    
+        for (var el of inputFiles) {
+
+            selectedFiles = el.files;
+            var name = el.getAttribute("name");
+
+            formData.delete(name);
+            // Iterate through selected files and append to FormData
+            for (let i = 0; i < selectedFiles.length; i++) {
+                var file = selectedFiles[i];
+
+                // Resize the image before appending to FormData
+                var resizedFile = await imageResize(file);
+
+                formData.append(name, resizedFile, resizedFile.name);
+                
+                // Check if all files are processed
+                if (formData.getAll(name).length === selectedFiles.length) {
+                    inputFilesNb--;
+
+                }
+
+
+                if (inputFilesNb == 0) {
+                    loaders.forEach(loader => {
+                        loader.style.display = "none";
+                    });
+                
+                    sendAjaxRequest(formSelector, formData);
+                }
+
+            }
+        }
+    } else {
+        sendAjaxRequest(formSelector, formData);
+    }
+
+
+
+
+}
+
+async function sendAjaxRequest(formSelector, formData) {
+
+    var form = document.querySelector(formSelector);
+    var action = form.getAttribute("action");
+    var method = form.getAttribute("method");
+    var showToast = form.getAttribute("data-form-toast");
+    var fetchOptions = {
+        method: method
+    }
+
+    if (method.trim().toLowerCase() == "post") {
+        fetchOptions.body = formData;
+    } else {
+        var queryString = new URLSearchParams(formData).toString()
+        action += action.includes("?") ? `&${queryString}` : `?${queryString}`
+    }
+
+    var loaders = document.querySelectorAll(`${formSelector} [data-form-loader]`);
+    var messages = document.querySelectorAll(`${formSelector} [data-form-message]`);
+    var elementsToHide = document.querySelectorAll(`${formSelector} [data-form-hide]`);
+    var buttons = document.querySelectorAll(`${formSelector} button`);
+    var errors = document.querySelectorAll(`[data-error]`);
+
+    loaders.forEach(loader => {
+        loader.style.display = "flex";
+    });
+
+    buttons.forEach(input => {
+        input.setAttribute("disabled", true);
+    });
+
+    messages.forEach(message => {
+        message.style.display = "none";
+    });
+
+    elementsToHide.forEach(el => {
+        el.style.display = "none";
+    });
+
+    errors.forEach(error => {
+        error.textContent = "";
+    });
+
+
+    var response = await fetch(action, fetchOptions);
+
+    loaders.forEach(loader => {
+        loader.style.display = "none";
+    });
+
+    buttons.forEach(input => {
+        input.removeAttribute("disabled");
+    });
+    elementsToHide.forEach(el => {
+        el.style.display = "flex";
+    });
+
+
+
+
+    if (!successStatusCodes.includes(response.status)) {
+        alert(`${action} ${statusCodesMessages[response.status]}`);
+        return;
+    }
+
+    response = await response.json();
+
+    if (response.message) {
+
+        messages.forEach(message => {
+
+            message.classList.remove("error");
+            message.classList.remove("success");
+            message.classList.remove("alert-success");
+            message.classList.remove("alert-danger");
+            message.classList.remove("alert-warning");
+            message.classList.remove("alert-info");
+
+            message.innerHTML = response.message;
+            message.style.display = "flex";
+            message.classList.add(response.status);
+            message.classList.add(`${response.status == 'success' ? 'alert-success' : 'alert-danger'}`)
+        });
+
+    }
+    if (showToast) {
+        toast({
+            message: response.message,
+            type: response.status,
+            style: "position:fixed !important;top:5rem !important"
+        });
+    }
+
+    if (response.redirect) {
+        window.location.href = response.redirect;
+    }
+    if (response.reset) {
+        document.querySelector(`#${formId}`).reset();
+    }
+
+    if (response.errors) {
+        var errorKeys = Object.keys(response.errors);
+        errorKeys.forEach((field) => {
+            document.querySelector(`[data-error=${field}]`).textContent = response.errors[field];
+        });
+
+
+    }
+
+    if (form.dataset.form) {
+        eval(window[form.dataset.form](response));
+    }
+
 
 }
 
@@ -336,7 +413,7 @@ function initImageInputs() {
             }
             var imageSrc = URL.createObjectURL(files[0]);
             var image = `<img src='${imageSrc}'/>`;
-            var removeImage = `<span class="${elementName}_remove" onclick='removeImage("${elementName}")'>✖</span>`;
+            var removeImage = `<span class="${elementName}_remove" onclick='removeImage("${elementName}")'>âœ–</span>`;
             document.querySelector(`#${elementName}_preview`).innerHTML = (image + removeImage);
         }
     });
@@ -358,6 +435,41 @@ function initImageInputs() {
     })
 
 
+}
+
+
+function imageResize(file) {
+    return new Promise((resolve, reject) => {
+        var reader = new FileReader();
+
+        reader.onload = function (event) {
+            var img = new Image();
+            img.src = event.target.result;
+
+            img.onload = function () {
+                var maxWidth = 500; // Adjust this as needed
+                var aspectRatio = img.width / img.height;
+                var newWidth = Math.min(maxWidth, img.width);
+                var newHeight = Math.round(newWidth / aspectRatio);
+
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+                ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+                canvas.toBlob(blob => {
+                    var resizedFile = new File([blob], file.name, {
+                        type: file.type,
+                        lastModified: file.lastModified
+                    });
+                    resolve(resizedFile);
+                }, file.type);
+            };
+        };
+
+        reader.readAsDataURL(file);
+    });
 }
 
 
