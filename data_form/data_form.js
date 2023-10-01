@@ -156,13 +156,13 @@ async function submitAjaxForm(formSelector) {
 
     var inputFiles = form.querySelectorAll("[type=file]:not([data-type-ignore])");
     var inputFilesNb = inputFiles.length;
-
+    var allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
     if (inputFilesNb) {
         var loaders = document.querySelectorAll(`${formSelector} [data-form-loader]`);
         loaders.forEach(loader => {
             loader.style.display = "flex";
         });
-    
+
         for (var el of inputFiles) {
 
             selectedFiles = el.files;
@@ -172,24 +172,31 @@ async function submitAjaxForm(formSelector) {
             // Iterate through selected files and append to FormData
             for (let i = 0; i < selectedFiles.length; i++) {
                 var file = selectedFiles[i];
-
-                // Resize the image before appending to FormData
-                var resizedFile = await imageResize(file);
-
-                formData.append(name, resizedFile, resizedFile.name);
-                
-                // Check if all files are processed
-                if (formData.getAll(name).length === selectedFiles.length) {
+                var fileType = file.type;
+                if (!allowedImageTypes.includes(fileType)) {
+                    formData.append(name, file);
                     inputFilesNb--;
+                } else {
+                    // Resize the image before appending to FormData
+                    var resizedFile = await imageResize(file);
 
+                    formData.append(name, resizedFile);
+
+                    // Check if all files are processed
+                    if (formData.getAll(name).length === selectedFiles.length) {
+                        inputFilesNb--;
+
+                    }
                 }
+
+
 
 
                 if (inputFilesNb == 0) {
                     loaders.forEach(loader => {
                         loader.style.display = "none";
                     });
-                
+
                     sendAjaxRequest(formSelector, formData);
                 }
 
